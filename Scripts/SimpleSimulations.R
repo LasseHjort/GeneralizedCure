@@ -150,7 +150,7 @@ for(k in 1:length(n.obs)){
           }
           
           #With the last knot beyond the available follow-up
-          knots <- log(c(quantile(event_times, probs = c(0, 0.25, 0.5, 0.75)), 8, 20))
+          knots <- log(c(quantile(event_times, probs = c(0, 0.25, 0.5, 0.75)), 8, 30))
           fit <- stpm2(Surv(FU_years, status) ~ 1, data = sim_data$D, bhazard = sim_data$D$exp_haz, 
                        smooth.formula = ~ nsx(x = log(FU_years), knots = knots[-c(1, length(knots))], 
                                               Boundary.knots = range(knots), cure = T))
