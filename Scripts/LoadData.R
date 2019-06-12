@@ -35,7 +35,7 @@ Colon$sex <- factor(Colon$Koen, levels = c("Mand", "Kvinde"), labels = c("male",
 Colon <- Colon[!Colon$CPR_status %in% c("Inaktiv, men tildelt personnummer af skattehensyn", 
                                         "Speciel vejkode i dansk folkeregister", 
                                         ""),]
-Colon$status <- as.numeric(Colon$CPR_status == "Død")
+Colon$status <- as.numeric(Colon$CPR_status == ifelse(linux, "D\xf8d","Død"))
 Colon$death_date <- Colon$CPR_status_dato
 Colon$death_date[Colon$death_date == ""] <- Colon$opdat_dato[Colon$death_date == ""]
 Colon$death_date <- as.Date(Colon$death_date)

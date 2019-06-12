@@ -258,7 +258,7 @@ z_values <- c(0, 1)
 #Set simulation parameters
 n.models <- 5
 n.sim <- 500
-n.cores <- 40
+n.cores <- 48
 
 #Run simulations
 filename <- file.path(data.out, "sim_res_cov.RData")
@@ -485,7 +485,7 @@ for(j in 1:5){
 #Do some rearrangements and output results to data frame
 D <- data.frame(unlist(meanLOR), unlist(meanCov), unlist(meanNAs), 
                 unlist(meanInt), unlist(meanDiae), unlist(meanDiaeS))
-D <- cbind(Model = c("A", "B", "C", "D", "E"), D, stringsAsFactors = F)
+D <- cbind(Model = c("WMC", "GMC1", "GMC2", "LC1", "LC2"), D, stringsAsFactors = F)
 names(D) <- c("Model", "LOR", "Var", "NA's","$A(\\hat\\pi, \\pi_0)$", "IA$(\\hat S_u, S_u)$", "IA$(\\hat R, R)$")
 ncol.D <- ncol(D)
 col_names <- "Model & LOR & SE(LOR) & NAs & AE$(\\hat\\pi(z), \\pi)$ & IAE$(\\hat S_u, S_u)$ & IAE$(\\hat R, R)$\\\\\n"
@@ -511,7 +511,7 @@ addtorow$command <- c(col_names,
                       paste0("\\multicolumn{", ncol.D, "}{l}{Scenario 3 (LOR = ", truelor[3],")}\\\\\n"), 
                       "\\hline\n")
 print(xtable(D, align = paste0(rep("c", ncol.D + 1), collapse = ""), label = "tab:rescov", 
-             caption = "Emperical mean LOR, AE, IAE, and median SE of the five models in Table \\ref{tab:modelscov}. 
+             caption = "Empirical mean LOR, AE, IAE, and median SE of the five models in Table \\ref{tab:modelscov}. 
              The IAE was calculated both for the survival of the uncured and the entire relative survival function. 
              LOR: log-odds ratio, SE: standard error, AE: absolute error, IAE: integrated absolute error.", 
              digits = digits.D),

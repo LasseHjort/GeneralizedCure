@@ -1,4 +1,3 @@
-
 #Create age group variable
 Colon$age_groups <- cut(Colon$age_years, breaks = c(0, 55, 65, 75, 120), labels = c("-55", "55-65", "65-75", "75-"))
 
@@ -18,7 +17,7 @@ for(i in 1:length(levs)){
   
   #Stpm2 model
   fitp <- stpm2(Surv(FU_years, status) ~ 1, data = Colon[these, ], 
-                bhazard = Colon$exp_haz[these], df = 8)
+                bhazard = Colon$exp_haz[these], df = 6)
   
   # knots <- quantile(Colon$FU_years[Colon$status == 1], probs = seq(0, 1, length.out = 6))
   # knots <- log(sort(c(knots, 10)))
@@ -32,14 +31,14 @@ for(i in 1:length(levs)){
   
   #Stpm2 - cure model
   fitpc <- stpm2(Surv(FU_years, status) ~ 1, data = Colon[these, ], 
-                 bhazard = Colon$exp_haz[these], df = 8, cure = T)
+                 bhazard = Colon$exp_haz[these], df = 6, cure = T)
   
   predc <- predict(fitpc, newdata = data.frame(FU_years = D1$time), type = "surv")
   D3 <- data.frame(surv = predc, time = D1$time, method = "stpm2-cure")
   
   #Flexible mixture cure model
   fitmix <- GenFlexCureModel(Surv(FU_years, status) ~ 1, data = Colon[these,], 
-                             bhazard = Colon$exp_haz[these], df = 7, verbose = F)
+                             bhazard = Colon$exp_haz[these], df = 5, verbose = F)
   
   predmix <- predict(fitmix, time = D1$time)
   D4 <- data.frame(surv = predmix[[1]]$Estimate, time = D1$time, method = "Mixture cure")
@@ -88,10 +87,9 @@ knots <- c(0, quantile(deaths, probs = c(0.2, 0.4, 0.6, 0.8, 1)))
 knots <- quantile(deaths, probs = seq(0, 1, length.out = 9))
 knots[which.min(knots)] <- 0
 #Fit model
-fitnp <- rsadd(Surv(FU, status) ~ Age + Gender + Charlson + Metastases + 
-                 Stage + ratetable(age = age, sex = sex, year = diag_date), 
+fitnp <- rsadd(Surv(FU, status) ~ Age + Gender + Charlson + Metastases + Stage + 
+                 ratetable(age = age, sex = sex, year = diag_date), 
                data = Colon, ratetable = survexp.dk, int = knots)
-
 #Tried to fit piecewise constant excess hazard model. Does not work due to the lack of differentiability
 # x <- Colon$FU_years
 # get_b <- function(knots, x){
@@ -112,10 +110,10 @@ fitnp <- rsadd(Surv(FU, status) ~ Age + Gender + Charlson + Metastases +
 
 #Fit stpm2 and stpm2-cure models
 fitp <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
-             bhazard = Colon$exp_haz, df = 8)
+             bhazard = Colon$exp_haz, df = 6)
 
 fitpc <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
-             bhazard = Colon$exp_haz, df = 8, cure = T)
+             bhazard = Colon$exp_haz, df = 6, cure = T)
 
 # plot(fit, newdata = data.frame(Age = 0, Gender = 0, Charlson = 0, Metastases = 0, Stage = 0), ylim = c(0, 1))
 # 
@@ -172,11 +170,17 @@ coefs.cure <- fitpc@coef[2:6]
 #Fit stpm2
 fit <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
              tvc = list(Age = 3, Gender = 3, Charlson = 3, Metastases = 3, Stage = 3),
-             bhazard = Colon$exp_haz, df = 8)
+             bhazard = Colon$exp_haz, df = 6)
 #Fit stpm2 - cure
 fitc <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
               tvc = list(Age = 3, Gender = 3, Charlson = 3, Metastases = 3, Stage = 3),
-              bhazard = Colon$exp_haz, df = 8, cure = T)
+              bhazard = Colon$exp_haz, df = 6, cure = T)
+
+for(age in c(50, 60, 70, 80)){
+  plot(fitc, newdata = data.frame(FU_years = seq(0.001, 17), Charlson = 1, Stage = 1, Metastases = 0, 
+                                  Gender = 0, Age = age), ylim = c(0, 1), main = age) 
+}
+
 
 #Check for the proportional hazards assumption of each variable by doing a likelihood ratio test.
 #In each loop, one time-varying effect is removed to assess the assumption
@@ -187,14 +191,14 @@ for(i in 1:length(vars)){
   names(tvc.list) <- vars[-i]
   fit2 <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
                 tvc = tvc.list,
-                bhazard = Colon$exp_haz, df = 8)
+                bhazard = Colon$exp_haz, df = 6)
   
   an <- anova(fit2, fit)
   res1[i] <- an[2, "Pr(>Chisq)"]
   
   fitc2 <- stpm2(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
                  tvc = tvc.list,
-                 bhazard = Colon$exp_haz, df = 8, cure = T)
+                 bhazard = Colon$exp_haz, df = 6, cure = T)
   
   an <- anova(fitc2, fitc)
   res2[i] <- an[2, "Pr(>Chisq)"]
@@ -300,17 +304,24 @@ dev.off()
 ############Cure rate estimation#################
 
 #Fit the parametric mixture cure model with time-varying covariate effects (may take a long time)
-filename <- file.path(data.out, "ColonMixModel.RData")
+filename <- file.path(data.out, "ColonMixModel3.RData")
 if(file.exists(filename)){
   load(filename)
 } else {
-  fitmix <- GenFlexCureModel(Surv(FU_years, status) ~ Age + Gender + Charlson + Metastases + Stage, data = Colon, 
-                             bhazard = Colon$exp_haz, df = 7, 
-                             cr.formula = ~ Age + Gender + Charlson + Metastases + Stage, 
-                             tvc = list(Age = 3, Gender = 3, Charlson = 3, Metastases = 3, Stage = 3), 
-                             control = list(maxit = 100000), ini.types = "flexpara") 
+  fitmix <- GenFlexCureModel(Surv(FU_years, status) ~ ns(Age, 2) + Gender + Charlson + Metastases + Stage, data = Colon, 
+                             bhazard = Colon$exp_haz, 
+                             cr.formula = ~ ns(Age, 2) + Gender + Charlson + Metastases + Stage, 
+                             tvc = list(Gender = 2, Charlson = 2, Metastases = 2, Stage = 2), 
+                             smooth.formula = ~ns(Age, 2):nsx(log(FU_years), df = 2) + nsx(log(FU_years), df = 5),
+                             control = list(maxit = 100000)) 
   save(fitmix, file = filename)
 }
+
+#Fit the stpm2-cure model with a spline on the age-variable
+fitc <- stpm2(Surv(FU_years, status) ~ ns(Age, df = 2) + Gender + Charlson + Metastases + Stage, data = Colon, 
+              tvc = list(Gender = 3, Charlson = 3, Metastases = 3, Stage = 3), 
+              smooth.formula = ~ns(Age, df = 2):nsx(FU_years, df = 3, cure = T) + nsx(log(FU_years), df = 6, cure = T),
+              bhazard = Colon$exp_haz)
 
 #Set newdata from which to do predictions
 Age <- c(50, 60, 70, 80)
@@ -333,13 +344,16 @@ plot_data2$model <- "stpm2-cure"
 
 #Combine results
 plot_data <- rbind(plot_data1, plot_data2)
-plot_data$y <- rep(1:4, nrow(plot_data) / 4)
+plot_data$y <- rep(1:length(Age), nrow(plot_data) / length(Age))
 plot_data$y[plot_data$model == "stpm2-cure"] <- plot_data$y[plot_data$model == "stpm2-cure"] - 0.1
 plot_data$y[plot_data$model == "Mixture cure model"] <- plot_data$y[plot_data$model == "Mixture cure model"] + 0.1
 plot_data$Metastases <- factor(plot_data$Metastases, levels = c(0, 1), labels = c("No metastases", "Metastases"))
 plot_data$Stage <- factor(plot_data$Stage, levels = c(0, 1), labels = c("UICC Stage I-II", "UICC Stage III-IV"))
 plot_data$Charlson <- factor(plot_data$Charlson, levels = c(0, 1), labels = c("CCI < 2", "CCI \u2265 2"))
 
+
+xlabs <- as.character(Age)
+names(xlabs) <- 1:length(Age)
 
 #Plot the estimated cure rates
 p <- ggplot(plot_data, aes(y = Estimate, x = y, colour = model)) + 
@@ -352,11 +366,70 @@ p <- ggplot(plot_data, aes(y = Estimate, x = y, colour = model)) +
         strip.text = element_text(size=15), 
         axis.text = element_text(size = 13), 
         legend.key.size = unit(3,"line")) + 
-  scale_x_continuous(breaks = 1:4, labels = c("1" = "50", "2" = "60", "3" = "70", "4" = "80")) + 
+  scale_x_continuous(breaks = 1:length(Age), labels = xlabs) + 
   scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0.2, 1)) +  
   scale_colour_grey()
 
+
 #Cairo_pdf is used to get the unichar correctly
 cairo_pdf(file.path(fig.out, "CureRateColon.pdf"), width = 10, height = 7)
+print(p)
+dev.off()
+
+
+
+#Compare 5-year relative survival probabilities
+
+
+#Set newdata from which to do predictions
+Age <- c(50, 60, 70, 80)
+Charlson <- c(0, 1)
+Metastases <- 0
+Gender <- 0
+Stage <- c(0, 1)
+newdata <- expand.grid(Age = Age, Charlson = Charlson, Metastases = Metastases, Gender = Gender, Stage = Stage)
+
+#Do predictions from the two cure models
+pred <- predict(fitmix, newdata = newdata, type = "surv", time = 5)
+pred <- do.call(rbind, pred)
+
+plot_data1 <- cbind(pred, newdata)
+plot_data1$model <- "Mixture cure model"
+
+pred2 <- predict(fitc, newdata = cbind(newdata, FU_years = 5), se.fit = T)
+plot_data2 <- cbind(pred2, newdata)
+plot_data2$model <- "stpm2-cure"
+
+#Combine results
+plot_data <- rbind(plot_data1, plot_data2)
+plot_data$y <- rep(1:length(Age), nrow(plot_data) / length(Age))
+plot_data$y[plot_data$model == "stpm2-cure"] <- plot_data$y[plot_data$model == "stpm2-cure"] - 0.1
+plot_data$y[plot_data$model == "Mixture cure model"] <- plot_data$y[plot_data$model == "Mixture cure model"] + 0.1
+plot_data$Metastases <- factor(plot_data$Metastases, levels = c(0, 1), labels = c("No metastases", "Metastases"))
+plot_data$Stage <- factor(plot_data$Stage, levels = c(0, 1), labels = c("UICC Stage I-II", "UICC Stage III-IV"))
+plot_data$Charlson <- factor(plot_data$Charlson, levels = c(0, 1), labels = c("CCI < 2", "CCI \u2265 2"))
+
+
+xlabs <- as.character(Age)
+names(xlabs) <- 1:length(Age)
+
+#Plot the estimated cure rates
+p <- ggplot(plot_data, aes(y = Estimate, x = y, colour = model)) + 
+  geom_point() + facet_grid(. ~ Charlson + Stage) + 
+  xlab("Age at diagnosis") + ylab("Cure proportion") + 
+  geom_segment(aes(y = lower, yend = upper, x = y, xend = y), linetype = "dashed") + theme_bw() + 
+  theme(legend.position = "bottom", legend.title = element_blank(), 
+        legend.text=element_text(size=15), 
+        axis.title=element_text(size=17),
+        strip.text = element_text(size=15), 
+        axis.text = element_text(size = 13), 
+        legend.key.size = unit(3,"line")) + 
+  scale_x_continuous(breaks = 1:length(Age), labels = xlabs) + 
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0.2, 1)) +  
+  scale_colour_grey()
+
+
+#Cairo_pdf is used to get the unichar correctly
+cairo_pdf(file.path(fig.out, "RelSurv5Colon.pdf"), width = 10, height = 7)
 print(p)
 dev.off()

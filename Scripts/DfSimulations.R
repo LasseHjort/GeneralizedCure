@@ -8,7 +8,7 @@ degrees <- c(2, 4, 6, 8, 10, 12)
 types <- c("weibull", "bs")
 
 #Number of cores for the multi threading
-n.cores <- 40
+n.cores <- 48
 
 #Initialize list for results
 L.all <- vector("list", length(types))
@@ -26,7 +26,7 @@ for(type in types){
   if(file.exists(filename)){
     load(filename)
   }else{
-    set.seed(20180625, "L'Ecuyer")
+    set.seed(20190514, "L'Ecuyer")
     L <- vector("list", length(cases_obs))
     for(i in 1:length(cases_obs)){
       cat(i, "\n")
@@ -37,11 +37,15 @@ for(type in types){
         #Looping over the degrees of freedom in degrees
         res <- matrix(nrow = 1, ncol = length(degrees))
         for(k in 1:length(degrees)){
-          fit <- GenFlexCureModel(Surv(FU_years, status) ~ 1, 
+          fit <- try(GenFlexCureModel(Surv(FU_years, status) ~ 1, 
                                   data = sim_data$D,
                                   bhazard = "exp_haz",
-                                  df = degrees[k] - 1 , verbose = F, covariance = F)
-          res[1, k] <- predict(fit, type = "curerate", var.type = "n")[[1]]$Estimate
+                                  df = degrees[k] - 1 , verbose = F, covariance = F))
+          if(inherits(fit, "try-error")){
+            res[1, k] <- NA
+          }else{
+            res[1, k] <- predict(fit, type = "curerate", var.type = "n")[[1]]$Estimate 
+          }
         }
         as.data.frame(res)
         
@@ -83,9 +87,11 @@ plot_data$Scenario <- factor(plot_data$Scenario)
 plot_data$model <- factor(plot_data$model, labels = degrees)
 plot_data$Scenario <- factor(plot_data$Scenario)
 
+true_pis <- sapply(cases_wei, function(x) x[[1]][1])
+df <- data.frame(x1 = 1:6 - 0.5, y1 = true_pis, y2 = true_pis, x2 = 1:6 + 0.5, Scenario = 1, model = "2")
 
 p <- ggplot(plot_data, aes(x = Scenario, y = crs, group = Scenario:model, fill = model)) +
-  geom_boxplot(outlier.size = 0.8) + ylab("Estimated cure rates") + xlab("Scenario") + theme_bw() +
+  geom_boxplot(outlier.size = 0.8) + ylab("Estimated cure probability") + xlab("Scenario") + theme_bw() +
   scale_fill_brewer(name = "Number of parameters", palette = "Set2") + 
   scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1), limits = c(0, 1)) + facet_grid(~ type) + 
   theme(legend.position = "bottom", 
@@ -94,7 +100,8 @@ p <- ggplot(plot_data, aes(x = Scenario, y = crs, group = Scenario:model, fill =
         axis.title=element_text(size=20),
         strip.text = element_text(size=18), 
         axis.text = element_text(size = 17)) + 
-  guides(fill = guide_legend(nrow = 1))
+  guides(fill = guide_legend(nrow = 1)) + 
+  geom_segment(aes(x = x1, y = y1, xend = x2, yend = y2, colour = "segment"), data = df, linetype = "dashed", color = "black")
 
 pdf(file.path(fig.out, "SimulateCureRateDegrees.pdf"), width = 13, height = 8)
 print(p)

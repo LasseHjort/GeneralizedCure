@@ -1,29 +1,5 @@
 ###########Simulations for generalized cure paper##########
 
-if(any(grepl("Linux|linux", Sys.info()))){
-  project <- "~/GeneralizedCure/"
-  setwd(project)
-  
-  #Load libraries (loaded again for easy usage on seperate cluster)
-  library(rstpm2)
-  library(cuRe)
-  library(ggplot2)
-  library(matrixStats)
-  library(xtable)
-  library(parallel)
-  
-  #Figure and table directories
-  fig.out <- "."
-  tab.out <- "."
-  data.out <- "."
-  
-  #Table format
-  tab.format <- "%.3f"
-  
-  #Set year
-  ayear <- 365.24
-}
-
 
 #Function for simulating survival data
 sim_surv <- function(pars, age, n, type = "weibull"){
@@ -150,11 +126,11 @@ sim_surv <- function(pars, age, n, type = "weibull"){
 ##Plot relative survival scenarios
 #Weibull
 cases_wei <- list(list(c(pi = 0.25, shape = 1, scale = 1)),
-                  list(c(pi = 0.25, shape = 1.2, scale = 0.1)),
-                  list(c(pi = 0.5, shape = 1.4, scale = 0.1)),
+                  list(c(pi = 0.4, shape = 0.9, scale = 0.7)),
+                  list(c(pi = 0.5, shape = 1.3, scale = 0.2)),
                   list(c(pi = 0.75, shape = 1, scale = 0.5)),
-                  list(c(pi = 0.75, shape = 1, scale = 0.1)),
-                  list(c(pi = 0, shape = 1.2, scale = 0.1)))
+                  list(c(pi = 0.9, shape = 1.2, scale = 1.5)),
+                  list(c(pi = 0.2, shape = 1.2, scale = 0.1)))
 
 #Generalized gamma
 cases_gam <- list(list(c(pi = 0.25, scale = 1.2, d =0.7, k = 0.7)),
@@ -166,11 +142,19 @@ cases_gam <- list(list(c(pi = 0.25, scale = 1.2, d =0.7, k = 0.7)),
 
 #Polynomial spline
 cases_gen <- list(list(c(pi = 0.25, -6, 4.5, 7.8, 7.8, 8, 8.5)),
-                  list(c(pi = 0.25, -6.9, 4.8, 5.9, 7, 7.5, 7.7)),
-                  list(c(pi = 0.5, -7.5, 5.3, 6.7, 8.1, 8.7, 9)),
+                  list(c(pi = 0.4, -7.5, 6.2, 7.8, 8.5, 9.8, 10.9)),
+                  list(c(pi = 0.5, -7.5, 5.3, 7.1, 8.9, 8.9, 9.2)),
                   list(c(pi = 0.75, -6, 4.5, 6.8, 7.8, 7.5, 8)),
-                  list(c(pi = 0.75, -6.5, 4.3, 5.8, 6.4, 6.6, 6.7)),
-                  list(c(pi = 0, -6.9, 4.8, 5.9, 7, 7.5, 7.7)))
+                  list(c(pi = 0.9, -8.5, 6.2, 10, 11, 12, 13)),
+                  list(c(pi = 0.2, -6.9, 4.8, 5.9, 7, 7.5, 7.7)))
+
+# f <- function(t){
+#   pars <- cases_gen[[5]][[1]]
+#   exp(-exp(cbind(1, bs(x = t, knots = c(1, 7), Boundary.knots = c(0, 15))) %*% pars[-1]))
+# }
+# 
+# curve(f, from = 0, to = 30, ylim = c(0, 1), n = 1000)
+# abline(v = 15, lty = 2, h = 0)
 
 
 #Make table for supplementary containing the parameter values for the simulations
@@ -223,8 +207,11 @@ D_gen <- data.frame(surv = do.call(c, L), time.points = rep(time.points, length(
 D <- rbind(D_wei, D_gen)
 D$Scenario <- factor(D$Scenario)
 
-p <- ggplot(D, aes(x = time.points, y = surv, group = Scenario, colour = Scenario)) + geom_line() +
+p <- ggplot(D, aes(x = time.points, y = surv, colour = Scenario, linetype = Scenario)) + geom_line() +
   ylab("Relative survival") + xlab("Time") + theme_bw() + 
+  scale_linetype_manual(values = c("solid", "solid", "dashed", 
+                                   "dashed", "twodash", "twodash")) + 
+  scale_color_manual(values = rep(c("black", "grey"), 3)) + 
   theme(legend.position = "bottom", 
         legend.text=element_text(size=13), 
         legend.title = element_text(size = 13),
@@ -233,12 +220,30 @@ p <- ggplot(D, aes(x = time.points, y = surv, group = Scenario, colour = Scenari
         axis.text = element_text(size = 13),
         legend.key.size = unit(2,"line")) +
   geom_vline(xintercept = 15, linetype = "dashed") + guides(colour = guide_legend(nrow = 1)) +
-  facet_grid(.~ Model) + ylim(0,1) + scale_color_brewer(palette = "Set2") 
+  facet_grid(.~ Model) + ylim(0,1)# + scale_color_brewer(palette = "Set2") 
 
 
 pdf(file.path(fig.out, "Cases.pdf"), width = 8, height = 5)
 print(p)
 dev.off()
+
+
+# p <- ggplot(D[D$Model == "Weibull", ], aes(x = time.points, y = surv, group = Scenario, colour = Scenario)) + geom_line() +
+#   ylab("Relative survival") + xlab("Time") + theme_bw() + 
+#   theme(legend.position = "bottom", 
+#         legend.text=element_text(size=13), 
+#         legend.title = element_text(size = 13),
+#         axis.title=element_text(size=14),
+#         strip.text = element_text(size=13), 
+#         axis.text = element_text(size = 13),
+#         legend.key.size = unit(2,"line")) +
+#   geom_vline(xintercept = 15, linetype = "dashed") + guides(colour = guide_legend(nrow = 1)) +
+#   ylim(0,1) + scale_color_brewer(palette = "Set2") 
+# 
+# 
+# pdf(file.path(fig.out, "Cases_weibull.pdf"), width = 9, height = 7)
+# print(p)
+# dev.off()
 
 
 # #1
@@ -263,11 +268,11 @@ dev.off()
 
 
 # time <- seq(0.00001, 30, length.out = 1000)
-# scale <- 0.1
+# scale <- 1.5
 # shape <- 1.2
 # probs <- log(-log(exp(- scale * time ^ shape)))
 # offset <- rep(-18, length(time))
-# fit <- lm(probs ~ -1 + b_matrix(time) + offset(offset))
+# fit <- lm(probs ~ -1 + bs(time,  knots = c(1, 7), Boundary.knots = c(0, 15)) + offset(offset))
 
 
 #Run the simulations without covariates
@@ -278,4 +283,10 @@ source("Scripts/DfSimulations.R")
 
 #Run the simulations with covariates
 source("Scripts/Simulations_cov.R")
+
+#Run the simulations with different link functions
+source("Scripts/Simulations_link.R")
+
+#Run the simulations with different initial values
+source("Scripts/Simulations_initialValues.R")
 
