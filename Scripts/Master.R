@@ -1,29 +1,11 @@
 #Master script for executing the analyses for the article "Generalized Parametric Cure Models"
 #As the simulations utilize the mclapply function, the scripts have to be executed on a UNIX platform.
 
-linux <- any(grepl("Linux|linux", Sys.info()))
-if(linux){
-  project <- "~/GeneralizedCure/"
-  setwd(project)
-  
-  #Figure and table directories
-  fig.out <- "Output/Figures"
-  tab.out <- "Output/Tables"
-}else{
-  #Create directory
-  project <- "K:/FORSK-Projekt/Projekter/Scientific Projects/110_PhD_Lasse_2015/Projekter/GeneralizedCure/"
-  setwd(project)
-  
-  #Figure, table, and data directories (for thesis and article)
-  thesis <- FALSE
-  if(thesis){
-    fig.out <- "C:/Users/sw1y/Dropbox/Apps/ShareLaTeX/Thesis/papers/paperD/Output/Figures/"
-    tab.out <- "C:/Users/sw1y/Dropbox/Apps/ShareLaTeX/Thesis/papers/paperD/Output/Tables/"
-  }else{
-    fig.out <- "C:/Users/sw1y/Dropbox/Apps/ShareLaTeX/Generalized cure models - BJ/Output/Figures/"
-    tab.out <- "C:/Users/sw1y/Dropbox/Apps/ShareLaTeX/Generalized cure models - BJ/Output/Tables/" 
-  }
-}
+#Figure and table directories
+fig.out <- "."
+tab.out <- "."
+#Load absolute paths to use for project
+source("Scripts/directories.R")
 
 #Set generated data directory
 data.out <- "GeneratedData"
@@ -31,12 +13,11 @@ data.out <- "GeneratedData"
 #Load libraries
 library(rstpm2)
 library(cuRe)
-#library(VGAM)
 library(ggplot2)
 library(relsurv)
 library(matrixStats)
 library(xtable)
-#library(etm)
+library(statmod)
 library(RColorBrewer)
 library(parallel)
 

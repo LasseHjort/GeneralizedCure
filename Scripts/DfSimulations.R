@@ -53,7 +53,6 @@ for(type in types){
       
       
       L[[i]] <- do.call(rbind, curerate)
-      #L_wei[[i]]$M <- M
     }
     save(L, file = filename)
   }

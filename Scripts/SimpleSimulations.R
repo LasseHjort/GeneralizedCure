@@ -61,7 +61,7 @@ for(k in 1:length(n.obs)){
           #for(j in 1:n.sim){
           #cat(j, "\n")
           sim_data <- do.call(sim_surv, cases_obs[[i]])
-          # 
+          # Check imperical relative survival
           # fit <- rs.surv(Surv(FU, status) ~ ratetable(age = age, sex = sex, year = diag_date),
           #                 ratetable = survexp.dk, data = sim_data$D)
           # fit$time <- fit$time / 365.24
@@ -238,11 +238,6 @@ create_plot <- function(n){
   print(p)
 }
 
-
-#Create plots and output to file
-# create_plot("1000")
-# create_plot("500")
-# create_plot("200")
 
 #Create figures for n = 1000, 500, and 200
 pdf(file.path(fig.out, "SimulateCureRate1000.pdf"), width = 13, height = 8)

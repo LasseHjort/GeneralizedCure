@@ -76,9 +76,7 @@ sim_surv_cov <- function(pars, age, n, type = "weibull", link = "logit"){
   #Simulate binary covariate and calculate pi
   z <- rbinom(n = n, size = 1, prob = 0.5)
   M <- model.matrix(~z)
-  #pars[1] <- inv.links[[link]](pars[1])
   pi <- as.numeric(links[[link]](M %*% pars[1:2]))
-  #pars[3] <- log(pars[3])
   lp <- as.numeric(M %*% pars[3:4])
   
   #Set survival of the uncured and relative survival functions using the Weibull distribution
@@ -88,26 +86,6 @@ sim_surv_cov <- function(pars, age, n, type = "weibull", link = "logit"){
       surv - u
     }
   }
-  
-  
-  
-  # if(type == "gengamma"){
-  #   surv_can_fun <- function(pars, time) pgengamma.stacy(time, scale = pars[2], 
-  #                                                        d = pars[3], k = pars[4], lower.tail = F)
-  #   dens_can_fun <- function(pars, time) dgengamma.stacy(time, scale = pars[2], 
-  #                                                        d = pars[3], k = pars[4])
-  #   rel_surv <- function(time) pars[1] + (1 - pars[1]) * pgengamma.stacy(time, scale = pars[2], 
-  #                                                                        d = pars[3], k = pars[4], lower.tail = F)
-  #   qrel_surv <- function(q){
-  #     res <- rep(Inf, length(q))
-  #     wh <- q < 1 - pars[1]
-  #     res[wh] <- qgengamma.stacy(q[wh] / (1 - pars[1]), 
-  #                                scale = pars[2], 
-  #                                d = pars[3], 
-  #                                k = pars[4])
-  #     res
-  #   }
-  # }
   
   #Function to simulate data
   sim_fun_rel <- function(x){
@@ -139,10 +117,12 @@ sim_surv_cov <- function(pars, age, n, type = "weibull", link = "logit"){
   D$FU <- pmin(D$fu, sim_cens)
   D$status <- as.numeric(D$fu <= sim_cens)
   D$FU[D$FU < 1e-3] <- 1e-3
+  #Check the imperical survival function
   # plot(survfit(Surv(FU, status) ~ 1, data = D))
   # curve(rel_surv, from = 0, to = 15, add = T, col = 2)
   #Follow-up in days
   D$FU <- D$FU *  ayear
+  #Check the imperical relative survival function
   # rsfit <- rs.surv(Surv(FU, status) ~ 1 + ratetable(age = age, sex = sex, year = diag_date), 
   #                  data = D, ratetable = survexp.dk, method = "ederer2")
   # 
@@ -225,7 +205,7 @@ print(xtable(D, align = "lcccccccccc",
       file = file.path(tab.out, "ParamValues.tex"), include.rownames = F,
       sanitize.colnames.function = identity, sanitize.text.function = identity)
 
-
+#Check relative survival trajectory
 # plot_case <- function(case){
 #   time <- seq(0, 30, length.out = 100)
 #   z <- 0
@@ -246,12 +226,12 @@ print(xtable(D, align = "lcccccccccc",
 
 #Set number of nodes for the Gauss-Legendre quadrature
 gaussxw <- statmod::gauss.quad(100)
-#weights <- gaussxw$weights %*% t(gaussxw$weights)
 weights <- gaussxw$weights
+
 #Set upper limit of integral
 upper.lim <- 15
 time <- upper.lim / 2 * gaussxw$nodes + upper.lim / 2
-#z_values <- 1 / 2 * gaussxw$nodes + 1/2
+
 #Select relevant values of z
 z_values <- c(0, 1)
 
@@ -281,9 +261,9 @@ if(file.exists(filename)){
     res <- mclapply(1:n.sim, function(j){
       logor_j <- var_j <- int_j <- diae_j <- diae_surv_j <- rep(NA, n.models)
       #cat(j, "\n")
-      #undebug(sim_surv_cov)
       sim_data <- do.call(sim_surv_cov, cases[[i]])
       
+      #Check imperical relative survival trajectory
       # fit <- rs.surv(Surv(FU, status) ~ z + ratetable(age = age, sex = sex, year = diag_date),
       #               ratetable = survexp.dk, data = sim_data$D, method = "ederer2")
       # plot(fit, col = 1:2)
@@ -324,7 +304,6 @@ if(file.exists(filename)){
       if(!is.null(fit1$covariance)){
         var_j[2] <- sqrt(fit1$covariance[2,2])
       }
-      #log(quantile(sim_data$D$FU_years[sim_data$D$status == 1], probs = c(0, 0.25, 0.5, 0.75, 1)))
       #Get absolute error
       pred <- predict(fit1, newdata = data.frame(z = z_values), type = "curerate")
       pred <- do.call(rbind, pred)$Estimate
@@ -448,15 +427,6 @@ if(file.exists(filename)){
   save(L, file = filename)
 }
 
-
-# boxplot(L[[1]]$logor - trueor[1])
-# abline(h = 0)
-# 
-# boxplot(L[[2]]$logor - trueor[2])
-# abline(h = 0)
-# 
-# boxplot(L[[3]]$logor - trueor[3])
-# abline(h = 0)
 
 #Calculate biases
 
