@@ -4,11 +4,13 @@
 #Figure and table directories
 fig.out <- "."
 tab.out <- "."
+
+#Set generated data directory
+data.out <- "."
+
 #Load absolute paths to use for project
 source("Scripts/directories.R")
 
-#Set generated data directory
-data.out <- "GeneratedData"
 
 #Load libraries
 library(rstpm2)
@@ -31,15 +33,10 @@ ayear <- 365.24
 #Color palette
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-#Load data
-#source("Scripts/LoadData.R", encoding = "utf-8")
-
 #Run simulations
 source("Scripts/Setup_simulations.R")
 
 #Run analysis of Colon cancer data
-#source("Scripts/Data_analysis.R")
+source("Scripts/Data_analysis.R")
 
-#Run analysis of DLBCL data (not included in the article)
-#source("Scripts/DLBCLAnalysis.R")
 

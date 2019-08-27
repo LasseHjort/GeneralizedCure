@@ -21,3 +21,6 @@ if(linux){
     tab.out <- "C:/Users/sw1y/Dropbox/Apps/ShareLaTeX/Generalized cure models - BJ/Output/Tables/" 
   }
 }
+
+#Set generated data directory
+data.out <- "GeneratedData"

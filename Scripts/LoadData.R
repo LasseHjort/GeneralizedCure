@@ -2,7 +2,7 @@
 #Perform data analysis
 
 #Load data and remove CPR-number, birth date and hospital identification
-filename <- "GeneratedData/Colon.RData"
+filename <- file.path(data.out, "Colon.RData")
 if(file.exists(filename)){
   load(filename)
 }else{

@@ -1,4 +1,5 @@
 
+load(file.path(data.out, "Colon.RData"))
 
 #Create age group variable
 Colon$age_groups <- cut(Colon$age_years, breaks = c(0, 55, 65, 75, 120), labels = c("-55", "55-65", "65-75", "75-"))
